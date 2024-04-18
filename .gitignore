@@ -1,0 +1,3 @@
+motionnet/outputs/
+motionnet/lightning_logs/
+motionnet/*/__pycache__/
