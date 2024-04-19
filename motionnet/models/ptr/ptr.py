@@ -264,9 +264,19 @@ class PTR(BaseModel):
         :return: (T, B, N, H)
         '''
         ######################## Your code here ########################
-        pass
+        
+            # t timesteps 
+            # b batch size
+            # n number of agents
+            # h hidden size
+        res = torch.zeros_like(agents_emb)
+        for i in range(agents_emb.size(0)):
+            res[i] = self.pos_encoder(agents_emb[i].transpose(0,1)).transpose(0,1)
+
+            res[i] = layer(res[i], src_key_padding_mask=agent_masks[:,i].transpose(0,1))
+
         ################################################################
-        return agents_emb
+        return res
 
     def social_attn_fn(self, agents_emb, agent_masks, layer):
         '''
@@ -278,7 +288,10 @@ class PTR(BaseModel):
         :return: (T, B, N, H)
         '''
         ######################## Your code here ########################
-        pass
+        res = torch.zeros_like(agents_emb)
+        for i in range(agents_emb.size(2)):
+            res[:,:,i] = layer(agents_emb[:,:,i], src_key_padding_mask=agent_masks[:,:,i])
+
         ################################################################
         return agents_emb
 
@@ -306,7 +319,11 @@ class PTR(BaseModel):
 
         ######################## Your code here ########################
         # Apply temporal attention layers and then the social attention layers on agents_emb, each for L_enc times.
-        pass
+        for i in range(self.L_enc):
+            agents_emb = self.temporal_attn_fn(agents_emb, opps_masks, self.temporal_attn_layers[i])
+
+            agents_emb = self.social_attn_fn(agents_emb, opps_masks, self.social_attn_layers[i])
+
         ################################################################
 
         ego_soctemp_emb = agents_emb[:, :, 0]  # take ego-agent encodings only.
