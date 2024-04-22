@@ -269,11 +269,52 @@ class PTR(BaseModel):
             # b batch size
             # n number of agents
             # h hidden size
-        res = torch.zeros_like(agents_emb)
-        for i in range(agents_emb.size(0)):
-            res[i] = self.pos_encoder(agents_emb[i].transpose(0,1)).transpose(0,1)
+        # ------
+        """
+        ANDREA
+        agents_emb
+        torch.Size([21, 61, 16, 128])
+        agent_masks
+        torch.Size([61, 21, 16])
+        1 agt_emb:  torch.Size([61, 16, 128])
+        1 agt_emb (transp):  torch.Size([16, 61, 128])
+        2 agt_emb:  torch.Size([61, 16, 128])
+        2 mask:  torch.Size([16, 61])
 
-            res[i] = layer(res[i], src_key_padding_mask=agent_masks[:,i].transpose(0,1))
+        MIO
+        agents_emb
+        torch.Size([21, 61, 16, 128])
+        agent_masks
+        torch.Size([61, 21, 16])
+        1 agt_emb:  torch.Size([21, 61, 128])
+        2 agt_emb:  torch.Size([21, 61, 128])
+        2 mask:  torch.Size([61, 21])
+        """
+
+        res = torch.zeros_like(agents_emb)
+        for i in range(agents_emb.size(2)):
+            res[:,:,i] = self.pos_encoder(agents_emb[:,:,i])
+            # print("1 agt_emb: ", res[:,:,i].size())
+
+            res[:,:,i] = layer(res[:,:,i], src_key_padding_mask=agent_masks[:,:,i])
+            # print("2 agt_emb: ", res[:,:,i].size())
+            # print("2 mask: ", agent_masks[:,:,i].size())
+
+
+        # T, B, N, H = agents_emb.size()
+        # agents_emb_2 = agents_emb.reshape(T, B*N, H)
+        # agent_masks_2 = agent_masks_2.reshape(B*N, T)
+        # print("3 agt_emb: ", agents_emb_2.size())
+        # print("3 mask: ", agent_masks_2.size())
+        # res2 = torch.zeros_like(agents_emb_2)
+        # res2 = self.pos_encoder(agents_emb_2)
+        # res2 = layer(res2, src_key_padding_mask=agent_masks_2)
+        # res2 = res2.reshape(T, B, N, H)
+
+        # print(all(torch.eq(res, res2).flatten()))
+
+        print(torch.isnan(res).any())
+
 
         ################################################################
         return res
@@ -288,12 +329,30 @@ class PTR(BaseModel):
         :return: (T, B, N, H)
         '''
         ######################## Your code here ########################
+        '''
+        ANDREA
+        SOC agt_emb:  torch.Size([21, 61, 128])
+        SOC mask:  torch.Size([61, 21])
+
+        MIO
+        SOC agt_emb perm:  torch.Size([16, 61, 128])
+        SOC agt_emb:  torch.Size([61, 16, 128])
+        SOC mask:  torch.Size([61, 16])
+        SOC res:  torch.Size([21, 61, 16, 128])
+        '''
+
         res = torch.zeros_like(agents_emb)
-        for i in range(agents_emb.size(2)):
-            res[:,:,i] = layer(agents_emb[:,:,i], src_key_padding_mask=agent_masks[:,:,i])
+        for i in range(agents_emb.size(0)):
+            # print("SOC agt_emb perm: ", agents_emb[i].permute(1,0,2).size())
+            res[i] = layer(agents_emb[i].permute(1,0,2), src_key_padding_mask=agent_masks[:,i,:]).permute(1,0,2)
+            # print("SOC agt_emb: ", res[i].size())
+            # print("SOC mask: ", agent_masks[:,i,:].size())
+
+        # print("SOC res: ", res.size())
+        print(torch.isnan(res).any())
 
         ################################################################
-        return agents_emb
+        return res
 
     def _forward(self, inputs):
         '''
