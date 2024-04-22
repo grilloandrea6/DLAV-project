@@ -292,7 +292,7 @@ class PTR(BaseModel):
         """
 
         res = torch.zeros_like(agents_emb)
-        agent_masks[:, -1][agent_masks.sum(-1) == agents_emb.size(0)] = False
+        agent_masks[:, -1][agent_masks.sum(-1) == agents_emb.size(2)] = False
         for i in range(agents_emb.size(2)):
             res[:,:,i] = self.pos_encoder(agents_emb[:,:,i])
             # print("1 agt_emb: ", res[:,:,i].size()
@@ -342,7 +342,7 @@ class PTR(BaseModel):
         '''
 
         res = torch.zeros_like(agents_emb)
-        agent_masks[:, -1][agent_masks.sum(-1) == agents_emb.size(2)] = False
+        agent_masks[:, -1][agent_masks.sum(-1) == agents_emb.size(0)] = False
         for i in range(agents_emb.size(0)):
             # print("SOC agt_emb perm: ", agents_emb[i].permute(1,0,2).size())
             res[i] = layer(agents_emb[i].permute(1,0,2), src_key_padding_mask=agent_masks[:,i,:]).permute(1,0,2)
